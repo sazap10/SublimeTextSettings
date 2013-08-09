@@ -1,0 +1,3 @@
+[{ "keys": ["ctrl+F1"], "command": "show_panel", "args": {"panel": "console", "toggle": true}},
+ {"keys": ["super+t"], "command": "reindent", "args": {"single_line": false} } 
+]
