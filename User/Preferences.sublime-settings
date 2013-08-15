@@ -1,0 +1,22 @@
+{
+	"color_scheme": "Packages/Color Scheme - Default/Solarized (Dark).tmTheme",
+	"default_line_ending": "unix",
+	"detect_slow_plugins": false,
+	"dictionary": "Packages/Language - English/en_GB.dic",
+	"font_size": 10,
+	"ignored_packages":
+	[
+		"Vintage"
+	],
+	"ignored_words":
+	[
+		"Y',$strtotime",
+		"h1",
+		"jquery",
+		"js",
+		"m",
+		"min",
+		"var"
+	],
+	"spell_check": true
+}

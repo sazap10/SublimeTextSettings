@@ -1,0 +1,30 @@
+{
+	"history":
+	{
+		"-150467386":
+		{
+			"command": "insert_nums",
+			"date": 1366663474.74,
+			"label": "\\i(60,1)",
+			"separator": null,
+			"text": "60 1 1"
+		},
+		"1324759780":
+		{
+			"command": "insert_nums",
+			"date": 1366616167.53,
+			"label": "\\i(62,1)",
+			"separator": null,
+			"text": "62 1 1"
+		}
+	},
+	"last_command":
+	{
+		"command": "insert_nums",
+		"index": 2,
+		"key": "-150467386",
+		"label": "\\i(60,1)",
+		"separator": null,
+		"text": "60 1 1"
+	}
+}

@@ -1,0 +1,249 @@
+<?php
+class AttendanceTeamMembersController extends AppController {
+
+    public $helpers = array( 'Html', 'Form', 'Js'=>array( 'Jquery' ) );
+    public $components = array( 'Auth' );
+    public $uses = array( 'AttendanceTeamMember', 'TeamMember' , 'AttendanceTypes');
+
+    function beforeFilter() {
+        parent::beforeFilter();
+    }
+
+    function view($setting=null, $date=null ) {
+        if ( !( isset( $setting ) ) ) {
+            $settings=$this->Setting->find( 'list', array( 'fields' => array( 'id', 'nursery_name' ) ) );
+            $this->set( 'settings', $settings );
+        }else{
+        if ( !isset( $date ) ) {
+            $date = date( 'Y-m-d' );
+        }
+        $data = $this->AttendanceTeamMember->find( 'all', array( 'conditions' => array( 'attendance_date' => $date, 'TeamMember.setting_id' => $setting), 'order' => array( 'last_name ASC,time ASC' ) ) );
+        $attendanceList = $this->__getSignInOutList( $data, $date );
+        $this->set( compact( 'attendanceList', 'date' ) );
+    }
+    }
+
+    function __getSignInOutList( $attendanceData, $date ) {
+        $attendanceList = array();
+        $currentRecord = -1;
+        foreach ( $attendanceData as $key => $value ) {
+
+            if ( $value['AttendanceTeamMember']['is_sign_in']=='1' ) {
+                $currentRecord++;
+                $attendanceList[$currentRecord]['attendance_type_id'] = $value['AttendanceTeamMember']['attendance_type_id'];
+                $attendanceList[$currentRecord]['attendance_type'] = $value['AttendanceType']['description'];
+                $attendanceList[$currentRecord]['name'] = $value['TeamMember']['name'];
+                $attendanceList[$currentRecord]['team_member'] = $value['AttendanceTeamMember']['team_member'];
+                $attendanceList[$currentRecord]['attendance_date'] = $value['AttendanceTeamMember']['attendance_date'];
+                $attendanceList[$currentRecord]['sign_in_id'] = $value['AttendanceTeamMember']['id'];
+                $attendanceList[$currentRecord]['sign_in_time'] = $value['AttendanceTeamMember']['time'];
+                $attendanceList[$currentRecord]['sign_in_photo'] = $value['AttendanceTeamMember']['photo'];
+            }else if ( $value['AttendanceTeamMember']['is_sign_in']=='0' ) {
+                    $recordNo = $this->__findRecord( $value['AttendanceTeamMember']['team_member'], $date, $attendanceList );
+                    $attendanceList[$recordNo]['sign_out_id'] = $value['AttendanceTeamMember']['id'];
+                    $attendanceList[$recordNo]['sign_out_time'] = $value['AttendanceTeamMember']['time'];
+                    $attendanceList[$recordNo]['sign_out_photo'] = $value['AttendanceTeamMember']['photo'];
+                }
+        }
+        return $attendanceList;
+    }
+
+    function __findRecord( $teamMemberId, $attendanceDate, $attendanceList ) {
+        $recordNo=-1;
+        foreach ( $attendanceList as $key => $value ) {
+            if ( $value['team_member']==$teamMemberId ) {
+                if ( !isset( $value['sign_out_id'] ) ) {
+                    return $key;
+                }
+            }
+        }
+    }
+
+    /*function view( $setting=null, $date=null ) {
+        //if there is no data about settings get a list of all the settings and send to view
+        if ( !( isset( $setting ) ) ) {
+            $settings=$this->Setting->find( 'list', array( 'fields' => array( 'id', 'nursery_name' ) ) );
+            $this->set( 'settings', $settings );
+        }
+        //otherwise get the relevant data for the view page
+        else {
+            if ( !isset( $date ) ) {
+                $date = date( 'Y-m-d' );
+            }
+
+            $day = date( 'l' );
+            //get the data of all the children who have a valid booking today
+            //TODO add children who have no booking but have an attendance record
+            $data=$this->Child->find( 'all', array(
+                    //do a join because the cakephp find doesnt work the way i want it to
+                    'joins' => array(
+                        array(
+                            'table' => 'bookings',
+                            'alias' => 'Booking',
+                            'type' => 'inner',
+                            'conditions' => array(
+                                //get only the bookings valid today with the setting id
+                                //and the day's session product id is not NULL
+                                'Booking.child_id= Child.id',
+                                'Booking.validFrom <'=> $date,
+                                'Booking.validTo >'=> $date,
+                                'Booking.setting_id' => $setting,
+                                'Booking.'.$day.' !=' => 'NULL'
+                            )
+                        ),
+                        array(
+                            'table' => 'session_products',
+                            'alias' => 'SessionProduct',
+                            'type' => 'inner',
+                            'conditions' => array(
+                                //the session product id = the day's session product id ie Booking.Monday
+                                'SessionProduct.id='.'Booking.'.$day
+                            )
+                        ),
+
+                    ),
+                    'fields' => array(
+                        'Child.id',
+                        'Child.name',
+                        'Booking.'.$day,
+                        'Booking.setting_id',
+                        'SessionProduct.sessionDescription',
+                        'SessionProduct.startTime',
+                        'SessionProduct.endTime'
+                    ),
+                    'order' => array( 'Child.last_name ASC' ),
+                    'recursive' =>-1
+                ) );
+            $currentAttendance= $this->AttendanceChild->findAllByAttendanceDate( $date, array(), array(), null, null, -1 );
+            foreach ( $data as $key => $value ) {
+                $guardianList = $this->__getChildGuardians( $value['Child']['id'] );
+                $data[$key]['guardians'] = $guardianList;
+                foreach ( $currentAttendance as $atKey => $atValue ) {
+                    if ( $value['Child']['id']==$atValue['AttendanceChild']['child_id'] ) {
+                        $record = $atValue['AttendanceChild'];
+                        if ( !isset( $data[$key]['Attendance'] ) ) {
+                            $data[$key]['Attendance'] = array();
+                        }
+                        array_push( $data[$key]['Attendance'] , $record );
+                    }
+                }
+
+            }
+            $attendanceTypes= $this->__getAttendanceTypes( $setting, $date );
+            $this->set( compact( 'data', 'day', 'date', 'attendanceTypes', 'setting' ) );
+        }
+    }*/
+
+    function __getAttendanceTypes( $setting, $date ) {
+        $list= $this->AttendanceTypes->find( 'list', array(
+                'fields' => array( 'id', 'description' ),
+                'conditions' => array( 'AttendanceTypes.validFrom <'=> $date,
+                    'AttendanceTypes.validTo >'=> $date, 'AttendanceTypes.valid_for_team' => 1, 'AttendanceTypes.setting_id'=>$setting )
+            ) );
+        return $list;
+    }
+
+    function edit( $teamMemberId, $date, $setting ) {
+        /*
+         *this part handles the actions available on the edit page, such as edit or delete record/s.
+        */
+        if ( $this->request->data ) {
+            $type = $this->request->data['type'];
+            //debug($this->request->data);
+            switch ( $type ) {
+            case '0':
+                $signOutDeleted=-1;
+                if ( $this->request->data['sign_out_id']!='-1' ) {
+                    $signOutDeleted = $this->AttendanceTeamMember->delete( $this->request->data['sign_out_id'] );
+                }
+                $attendanceRecord['AttendanceTeamMember']['id'] = $this->request->data['sign_in_id'];
+                $attendanceRecord['AttendanceTeamMember']['attendance_type_id'] = $this->request->data['attendance_type_id'];
+                $attendanceRecord['AttendanceTeamMember']['time'] = $this->request->data['sign_in_time'];
+                $recordSaved = $this->AttendanceTeamMember->save( $attendanceRecord );
+                $message;
+                if ( $signOutDeleted==-1 ) {
+                    if ( $recordSaved ) {
+                        $message = 'Record saved';
+                    }else {
+                        $message = 'Problem saving record';
+                    }
+                }else if ( $signOutDeleted ) {
+                        if ( $recordSaved ) {
+                            $message = 'Sign out record deleted and sign in updated';
+                        }else {
+                            $message = 'Sign out record deleted but problem saving sign in record';
+                        }
+                    }else if ( !$signOutDeleted ) {
+                        if ( $recordSaved ) {
+                            $message = 'Problem deleting sign out record and sign in updated';
+                        }else {
+                            $message = 'Problem deleting sign out record and saving sign in record';
+                        }
+                    }
+                $this->Session->setFlash( $message );
+                break;
+            case '1':
+                $signInDeleted = -1;
+                $signOutDeleted = -1;
+                if ( $this->request->data['sign_in_id']!='-1' ) {
+                    $signInDeleted = $this->AttendanceTeamMember->delete( $this->request->data['sign_in_id'] );
+                }
+                if ( $this->request->data['sign_out_id']!='-1' ) {
+                    $signOutDeleted = $this->AttendanceTeamMember->delete( $this->request->data['sign_out_id'] );
+                }
+                $message;
+                if ( $signInDeleted && $signOutDeleted ) {
+                    $message = 'Sign in and sign out records were successfully deleted';
+                }else if ( $signInDeleted && $signOutDeleted !=-1 && !$signOutDeleted ) {
+                        $message = 'Sign in record was deleted but sign out record was not';
+                    }else if ( $signOutDeleted && $signInDeleted !=-1 && !$signInDeleted ) {
+                        $message = 'Sign out record was deleted but sign in record was not';
+                    }else if ( !( $signInDeleted && $signOutDeleted ) ) {
+                        $message = 'Neither sign in or sign out records were deleted';
+                    }
+                $this->Session->setFlash( $message );
+                break;
+            case '2':
+                $attendanceRecord['AttendanceTeamMember']['id'] = $this->request->data['sign_in_id'];
+                $attendanceRecord['AttendanceTeamMember']['attendance_type_id'] = $this->request->data['attendance_type_id'];
+                $attendanceRecord['AttendanceTeamMember']['time'] = $this->request->data['sign_in_time'];
+                $signInSaved = $this->AttendanceTeamMember->save( $attendanceRecord );
+                $attendanceRecord['AttendanceTeamMember']['id'] = $this->request->data['sign_out_id'];
+                $attendanceRecord['AttendanceTeamMember']['attendance_type_id'] = $this->request->data['attendance_type_id'];
+                $attendanceRecord['AttendanceTeamMember']['time'] = $this->request->data['sign_out_time'];
+                $signOutSaved =  $this->AttendanceTeamMember->save( $attendanceRecord );
+                if ( $signInSaved && $signOutSaved ) {
+                    $message = 'Sign in and sign out records were successfully updated';
+                }else if ( $signInSaved ) {
+                        $message = 'Sign in record was updated but sign out record was not';
+                    }else if ( $signOutSaved ) {
+                        $message = 'Sign out record was updated but sign in record was not';
+                    }else {
+                    $message = 'Neither sign in or sign out records were deleted';
+                }
+                $this->Session->setFlash( $message );
+                break;
+            case '3':
+                $this->AttendanceTeamMember->deleteAll(
+                    array(
+                        'child_id' => $this->request->data['team_member'],
+                        'attendance_date' => $date )
+                    , false );
+                break;
+            }
+        }
+        $data = $this->AttendanceTeamMember->find( 'all', array(
+                'conditions' => array(
+                    'team_member' => $teamMemberId,
+                    'attendance_date' => $date
+                ),
+                'order' => array( 'time ASC' )
+            ) );
+        $atData = $this->__getSignInOutList( $data, $date );
+        $attendanceList = $this->__getAttendanceTypes( $setting, $date );
+        $name = $this->TeamMember->findById($teamMemberId)['TeamMember']['name'];
+        $this->set( compact( 'atData', 'date', 'attendanceList', 'name', 'teamMemberId', 'setting' ) );
+    }
+
+}
+?>

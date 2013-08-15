@@ -1,0 +1,23 @@
+{
+	"auto_upgrade_last_run": null,
+	"git_binary": "C:\\Users\\Sachin\\AppData\\Local\\GitHub\\PortableGit_93e8418133eb85e81a81e5e19c272776524496c6\\libexec\\git-core\\git.exe",
+	"installed_packages":
+	[
+		"BracketHighlighter",
+		"CakePHP (Native)",
+		"Case Conversion",
+		"CodeFormatter",
+		"Color Highlighter",
+		"DocBlockr",
+		"Evaluate",
+		"FileDiffs",
+		"HTML-CSS-JS Prettify",
+		"Package Control",
+		"Phpcs",
+		"PhpTidy",
+		"rsub",
+		"SublimeAStyleFormatter",
+		"SublimeCodeIntel",
+		"Text Pastry"
+	]
+}
